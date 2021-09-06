@@ -162,6 +162,7 @@ mongoClient.connect(url, (err, db) => {
             }
             randomString();
         })
+
         // Add Group page
         app.post('/add_group', (req, res) => {
             const newGroup = {
@@ -184,6 +185,7 @@ mongoClient.connect(url, (err, db) => {
                 }
             });
         });
+
         // 그룹 삭제하기
         app.post('/delete_group', (req, res) => {
             const q_group = {
@@ -201,36 +203,36 @@ mongoClient.connect(url, (err, db) => {
             });
             // **그룹 전체 삭제 추가하기
         });
+
         // 그룹 검색하기
-        app.post('/search_group', (req, res) => {
-            const q_searchid = { search_id: req.body.searchid }
+        app.post('/search_group', (req, res) => {    
+            const q_searchid = { group_id: req.body.searchid }
+            console.log(q_searchid);
             collectiong.findOne(q_searchid, (err, result) => {
                 if (result != null) {
-                    res.send(group_id, group_name);
+                    res.status(200).send(result.group_name);
                 } else {
                     res.status(400).send("존재하지 않는 그룹 id입니다.");
                 }
-            });
+            }); 
         });
+
         // 검색한 그룹 추가하기
         app.post('/add_search_group', (req, res) => {
-            const q_groupid = { group_id: req.body.group_id }
-            collectiong.findOne(q_groupid, (err, q_searchid) => {
-                // **@가 있는 내용 개수 카운트 후 숫자 추가하기
-                const q_email = { group_email: req.body.email };
-                // id에 newgroup 추가
-                collection.findOne(q_groupid, (err, result) => {
-                    if (result = ! null) {
-                        collectiong.insertOne(q_email, (err, result) => {
-                            res.status(200).send("그룹에 유저 추가 성공");
-                        });
-                    } else {
-                        res.status(400).send("그룹에 유저 추가 실패");
-                    }
+            const q_groupid = { group_id: req.body.groupid }
+            const q_email = { group_email: req.body.email };
+            // id에 newgroup 추가
+            collectiong.findOne(q_groupid, (err, result) => {
+            if (result = ! null) {
+                collectiong.insertOne(q_email, (err, result) => {
+                    res.status(200).send("그룹에 유저 추가 성공");
                 });
+            } else {
+                res.status(400).send("그룹에 유저 추가 실패");
+            }
             });
         });
-        //collection.find({email: newUser.email}, )
+ 
         // 그룹 정보 가져오기
         app.post('/group', (req, res) => {
             collectiong.find({ group_email: req.body.email, group_name: req.body.groupname }).toArray(function (err, result) {
@@ -253,6 +255,7 @@ mongoClient.connect(url, (err, db) => {
                 
             });
         })
+
         // 홈 화면 조회하기
         app.post('/home', (req, res) => {
             var arr_name = []
@@ -269,6 +272,7 @@ mongoClient.connect(url, (err, db) => {
         })
     }
 });
+
 app.listen(3000, () => {
     console.log("listening on port 3000....");
 });
