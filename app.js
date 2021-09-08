@@ -206,17 +206,14 @@ mongoClient.connect(url, (err, db) => {
             collectiong.findOne(q_group, (err, result) => {
                 if (result != null) {
                     collectiong.deleteOne(result, (err, obj) => {
-                        res.status(300).send();
-                        console.log("그룹 삭제가 완료되었습니다.");
+                        res.status(300).send("그룹 삭제가 완료되었습니다.");
                     });
                     
                 }
                 else {
-                    console.log("else 들어옴")
                     // 그룹 멤버가 그룹 삭제
                     collectiong.findOne({$and: [{ group_name: req.body.groupname }, query]}, (err, result) => {
                     if(result != null){
-                        console.log("잘 들어옴")
                         collectiong.updateOne({group_name: req.body.groupname}, { $unset:  query })
                         res.status(200).send("그룹 삭제 완료");
                     }
@@ -304,13 +301,12 @@ mongoClient.connect(url, (err, db) => {
 
             collectiong.find({$or: [{ group_email: req.body.email }, query]}, { projection: { group_name: 1 } }).toArray(function (err, result) {
                 if(result != null){
-                    console.log(query)
-                    console.log(req.body.email)
-                    console.log(result)
-                    for (var i = 0; i < result.length; i++) {
-                        arr_name[i] = result[i].group_name
-                    }
-                    res.status(200).send(arr_name)
+                    collectiong.find({$or: [{ group_email: req.body.email }, query]}, { projection: { group_name: 1 } }).toArray(function (err, result) {
+                        for (var i = 0; i < result.length; i++) {
+                            arr_name[i] = result[i].group_name
+                        }
+                        res.status(200).send(arr_name)
+                    });
                 }else{
                     res.status(400).send("홈 화면 조회하기 에러")
                 }
