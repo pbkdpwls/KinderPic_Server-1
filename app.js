@@ -134,7 +134,8 @@ mongoClient.connect(url, (err, db) => {
                 }
             });
         })
-        // group id 생성
+
+        // group id 생성 
         app.get('/groupid', (req, res) => {
             function randomString() {
                 var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
@@ -144,8 +145,6 @@ mongoClient.connect(url, (err, db) => {
                     var rnum = Math.floor(Math.random() * chars.length);
                     randomstring += chars.substring(rnum, rnum + 1);
                 }
-                console.log(randomstring)
-                console.log(typeof (randomstring))
                 res.status(200).send(randomstring);
                 /*
                  // group id 중복 확인
@@ -163,8 +162,9 @@ mongoClient.connect(url, (err, db) => {
             randomString();
         })
 
-        // Add Group page
+        // Add Group page 
         app.post('/add_group', (req, res) => {
+
             const newGroup = {
                 group_id: req.body.groupid,
                 group_email: req.body.email,
@@ -173,8 +173,10 @@ mongoClient.connect(url, (err, db) => {
                 group_place: req.body.groupplace,
                 group_schoolinfo: req.body.scohoolinfo,
             };
+
             const q_email = { email: newGroup.email };
-            collection.findOne(q_email, (err, result) => {
+
+            collectiong.findOne(q_email, (err, result) => {
                 if (result = ! null) {
                     collectiong.insertOne(newGroup, (err, result) => {
                         res.status(200).send("새로운 그룹 추가 성공");
@@ -186,28 +188,52 @@ mongoClient.connect(url, (err, db) => {
             });
         });
 
-        // 그룹 삭제하기
+        // 그룹 삭제하기 
         app.post('/delete_group', (req, res) => {
             const q_group = {
-                group_email: req.body.groupemail,
+                group_email: req.body.email,
                 group_name: req.body.groupname
             }
+
+            var query = {};
+            const q_email = { email: req.body.email }
+            collection.findOne(q_email, (err, result) => {
+                var myemail = 'group_email_' + result.name;
+                query[myemail]=req.body.email;
+            })
+
+            // 그룹장이 그룹 삭제
             collectiong.findOne(q_group, (err, result) => {
                 if (result != null) {
-                    collectiong.updateOne({}, { $unset: { group_email: req.body.groupemail } })
-                    res.status(200).send("그룹 삭제 완료");
+                    collectiong.deleteOne(result, (err, obj) => {
+                        res.status(300).send();
+                        console.log("그룹 삭제가 완료되었습니다.");
+                    });
+                    
                 }
                 else {
-                    res.status(404).send("그룹 삭제에 오류가 발생했습니다.");
+                    console.log("else 들어옴")
+                    // 그룹 멤버가 그룹 삭제
+                    collectiong.findOne({$and: [{ group_name: req.body.groupname }, query]}, (err, result) => {
+                    if(result != null){
+                        console.log("잘 들어옴")
+                        collectiong.updateOne({group_name: req.body.groupname}, { $unset:  query })
+                        res.status(200).send("그룹 삭제 완료");
+                    }
+                    else{
+                        res.status(400).send("그룹 삭제에 오류가 발생했습니다.");
+                    }
+                    });
                 }
+
             });
-            // **그룹 전체 삭제 추가하기
+            
+            
         });
 
-        // 그룹 검색하기
+        // 그룹 검색하기 
         app.post('/search_group', (req, res) => {    
             const q_searchid = { group_id: req.body.searchid }
-            console.log(q_searchid);
             collectiong.findOne(q_searchid, (err, result) => {
                 if (result != null) {
                     res.status(200).send(result.group_name);
@@ -217,31 +243,39 @@ mongoClient.connect(url, (err, db) => {
             }); 
         });
 
-        // 검색한 그룹 추가하기
+        // 검색한 그룹 추가하기 
         app.post('/add_search_group', (req, res) => {
+            // 이메일 field 생성
+            var myemail = ''
+            const q_email = { email: req.body.email }
+            collection.findOne(q_email, (err, result) => {
+                myemail = 'group_email_' + result.name;
+            })
             const q_groupid = { group_id: req.body.groupid }
-            const q_email = { group_email: req.body.email };
+
             // id에 newgroup 추가
-            collectiong.findOne(q_groupid, (err, result) => {
-            if (result = ! null) {
-                collectiong.insertOne(q_email, (err, result) => {
+            collectiong.findOne(q_groupid, (err, result) => {     
+                if (result = ! null) {
+                    collectiong.updateOne({group_id: req.body.groupid}, {$set: {[myemail]: req.body.email}}, false, true)
                     res.status(200).send("그룹에 유저 추가 성공");
-                });
-            } else {
-                res.status(400).send("그룹에 유저 추가 실패");
-            }
+                } else {
+                    res.status(400).send("그룹에 유저 추가 실패");
+                }
             });
+            
         });
  
-        // 그룹 정보 가져오기
-        app.post('/group', (req, res) => {
-            collectiong.find({ group_email: req.body.email, group_name: req.body.groupname }).toArray(function (err, result) {
+        
+        // 그룹 정보 가져오기 
+        app.post('/group', (req, res) => {       
+            collectiong.find( {group_name: req.body.groupname }).toArray(function (err, result) {
+
                 if(result != null){
                     var group_id = result[0].group_id
                     var group_date = result[0].group_date
                     var group_place = result[0].group_place
                     var group_schoolinfo = result[0].group_schoolinfo
-
+    
                     const objToSendGroup = {
                         group_id,
                         group_date,
@@ -249,18 +283,30 @@ mongoClient.connect(url, (err, db) => {
                         group_schoolinfo
                     }
                     res.status(200).send(JSON.stringify(objToSendGroup));
+                        
                 }else{
                     res.status(400).send("그룹 정보 가져오기 실패")
                 }
-                
+                    
             });
+            
         })
 
-        // 홈 화면 조회하기
+        // 홈 화면 조회하기 
         app.post('/home', (req, res) => {
             var arr_name = []
-            collectiong.find({ group_email: req.body.email }, { projection: { group_name: 1 } }).toArray(function (err, result) {
+            var query = {};
+            const q_email = { email: req.body.email }
+            collection.findOne(q_email, (err, result) => {
+                var myemail = 'group_email_' + result.name;
+                query[myemail]=req.body.email;
+            })
+
+            collectiong.find({$or: [{ group_email: req.body.email }, query]}, { projection: { group_name: 1 } }).toArray(function (err, result) {
                 if(result != null){
+                    console.log(query)
+                    console.log(req.body.email)
+                    console.log(result)
                     for (var i = 0; i < result.length; i++) {
                         arr_name[i] = result[i].group_name
                     }
